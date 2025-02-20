@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Маджонг</title>
+    <link rel="preload" href="static/background.png" as="image">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body oncontextmenu="return false;" ondragstart="return false;">
+
+    <audio id="backgroundMusic" loop>
+        <source src="audio/background.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+    <div id="startMenu" class="startMenu">
+        <button id="but_start" class="buttonMenu buttonMainMenu">Начать</button>
+    </div>
+
+    <div id="gameContainer" class="game-container">
+        <div class="top-bar">
+            <div class="level">
+                <div id="level-number" class="level-circle">1</div>
+                <div class="level-text">Уровень</div>
+            </div>
+
+            <div class="progress-bar">
+                <div id="myBar" class="progress"></div>
+            </div>
+
+            <div class="hearts">
+                <div class="heart heartGame heartsFull"></div>
+                <div class="heart heartGame heartsFull"></div>
+                <div class="heart heartGame heartsFull"></div>
+            </div>
+            <div class="controls">
+                <button id='help' class="zoom"><img src="static/help.png" alt="🔍">
+                    <div id="helpcount" class="helpcount">6</div>
+                </button>
+                <button id='but_pause' class="pause"> <img src="static/pause.png" alt="⏸️"></button>
+            </div>
+        </div>
+        <div class="game-area">
+            <div id="game-board">
+            </div>
+        </div>
+
+
+        <div class="bottom-bar">
+            <img id = 'sound' class="sound" src="static/soundon.png" alt="🔊">
+            <img id="refresh" class="refresh" src="static/refresh.png" alt="↻">
+        </div>
+    </div>
+    <div id="blur" class="blur"></div>
+
+    <div id="pause" class="pause_screen">
+        <button id="unpause" alt="▶️"></button>
+    </div>
+
+    <div id="timeUpModal" class="modal">
+        <div class="container">
+            <div id="modalHead" class="win">
+                <h1>Поздравляем!</h1>
+                <h2>Уровень пройден</h2>
+            </div>
+
+            <div class="modal-hearts">
+                <div class="heart">
+                    <div class="heart heartModal heartsFull"></div>
+                </div>
+                <div class="heart">
+                    <div class="heart heartModal heartsFull"></div>
+                </div>
+                <div class="heart">
+                    <div class="heart heartModal heartsFull"></div>
+                </div>
+            </div>
+            <!-- <h2>Очки:</h2> -->
+
+            <button id="but_modal" class="buttonMenu">Следующий уровень</button>
+        </div>
+    </div>
+
+    <script src="interface.js"></script>
+    <script src="pathFinder.js"></script>
+    <script src="scripts.js"></script>
+</body>
+
+</html>
