@@ -1,22 +1,19 @@
 function updateHeart() {
     for (let i = 0; i < 3; i++) {
-        const gameHeartsClasses = hearts[i].classList;
-        const modalHeartsClasses = heartsModal[i].classList;
 
         if (i <= currentLife - 1) {
-            gameHeartsClasses.add("heartsFull");
-            gameHeartsClasses.remove("heartsBroken");
-            modalHeartsClasses.add("heartsFull");
-            modalHeartsClasses.remove("heartsBroken");
+            document.getElementById('heartFull' + i).style.display = "block";
+            document.getElementById('heartBroken' + i).style.display = "none";
         }
 
         if (i > currentLife - 1) {
-            gameHeartsClasses.remove("heartsFull");
-            gameHeartsClasses.add("heartsBroken");
-            modalHeartsClasses.remove("heartsFull");
-            modalHeartsClasses.add("heartsBroken");
+            document.getElementById('heartFull' + i).style.display = "none";
+            document.getElementById('heartBroken' + i).style.display = "block";
         }
     }
+
+    heartsModal.innerHTML = heartsDiv.innerHTML;
+
 }
 
 function showModalDialoge() {
@@ -48,7 +45,7 @@ function showModalDialoge() {
 }
 
 function hideModalDialoge() {
-    gameContainer.style.display = 'block';
+    gameContainer.style.display = 'flex';
     startMenu.style.display = 'none';
     timeUpModal.style.display = 'none';
     blurDiv.style.display = 'none';
@@ -68,7 +65,7 @@ function paintBackGround(tile1, tile2) {
     }, 700);
 }
 
-function availableTile(tile1, tile2) {
+function availableTile(tile1, tile2, time = 1, delay = 1000) {
     tile1.classList.add('availableTile');
     tile2.classList.add('availableTile');
 
@@ -100,7 +97,7 @@ function availableTile(tile1, tile2) {
     const controlY = midY - 50; // Регулирует изгиб кривой
     
     // Формируем путь с помощью кривой Безье
-    const d = `M ${x1} ${y1} Q ${controlX} ${controlY} ${x2} ${y2}`;
+    const d = `M ${x1} ${y1} Q ${x1} ${y1} ${x2} ${y2}`;
     
     path.setAttribute("d", d);
     path.setAttribute("stroke", "#22ff77");
@@ -131,14 +128,14 @@ function availableTile(tile1, tile2) {
     // Добавляем анимацию
     path.style.strokeDasharray = path.getTotalLength();
     path.style.strokeDashoffset = path.getTotalLength();
-    path.style.animation = "drawArrow 1s ease-out forwards";
+    path.style.animation = `drawArrow ${time}s ease-out forwards`;
     
     // Удаляем SVG после анимации
     setTimeout(() => {
         svg.remove();
         tile1.classList.remove('availableTile');
         tile2.classList.remove('availableTile');
-    }, 1000);
+    }, delay);
 }
 
 function updateInterface() {

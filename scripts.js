@@ -1,9 +1,10 @@
 const gameContainer = document.getElementById('gameContainer');
 const gameBoard = document.getElementById('game-board');
-const levelElement = document.getElementById('level-number');
+const levelElement = document.getElementById('levelNum');
 const progressBar = document.getElementById("myBar");
-const hearts = document.getElementsByClassName("heartGame");
-const heartsModal = document.getElementsByClassName("heartModal");
+const hearts = document.getElementsByClassName("heartPic");
+const heartsDiv = document.getElementById("hearts");
+const heartsModal = document.getElementById("modalHearts");
 const pauseBut = document.getElementById('but_pause');
 const helpBut = document.getElementById('help');
 const helpCountElement = document.getElementById('helpcount');
@@ -24,7 +25,10 @@ const backgroundMusic = document.getElementById('backgroundMusic');
 const refreshBut = document.getElementById('refresh');
 
 butModal.addEventListener('click', () => reStartGame())
-but_start.addEventListener('click', () => {reStartGame();document.getElementById('backgroundMusic').play();})
+but_start.addEventListener('click', () => {
+    reStartGame();
+    // document.getElementById('backgroundMusic').play();
+})
 pauseBut.addEventListener('click', () => pauseGame())
 unpauseBut.addEventListener('click', () => reStartGame())
 helpBut.addEventListener('click', () => help())
@@ -37,11 +41,11 @@ function closeTimeUpModal() {
 }
 
 // game settings
-const numCols = 18;
+const numCols = 16;
 const numRows = 8;
 const gameSize = numCols * numRows / 2;
 const startdiff = 7;
-const T1 = 12000;  // Время на первый уровень (сек)
+const T1 = 6000;  // Время на первый уровень (сек)
 const dT = 5;    // Уменьшение времени на уровень (сек)
 const B_max = 5; // Максимальное бонусное время (сек)
 const t_b = 400;   // Пороговое время для бонуса (сек)
@@ -56,7 +60,10 @@ let levelTime; // Максимальное время на этот раунд (
 let currentLife = 3; // Количесто жизней
 let gametimer;
 let gameCondition = Conditions.standart;;
-let helpCount = 6;
+let helpCount = 500;
+let currentReshaffle = 0;
+const maxReshaffle = 20;
+
 
 let gameLVL = 1;
 levelElement.innerText = gameLVL;
@@ -66,10 +73,6 @@ let selectedTiles = [];
 let matrix = [];
 
 function createQueue() {
-    // Коты
-    // Собаки
-    // Хомяки 30-39
-    // Максимум 34
     const allTiles = [
         '30', '31', '32', '33', '34', '36', '37',
         '38', '39', '41', '42', '43', '51', '52',
@@ -101,7 +104,6 @@ function start_countdown() {
 
         if (finalTime <= 0) {
             currentLife--;
-            // Заменяем alert на показ модального окна
             if (currentLife == 0) {
                 gameCondition = Conditions.end;
                 updateHeart();
@@ -119,7 +121,6 @@ function start_countdown() {
     }, 10);
 }
 
-// Функция расчета бонусного времени
 function calculateBonusTime(pairTime) {
     return pairTime <= t_b ? B_max * (1 - pairTime / t_b) * 100 : 0;
 }
@@ -146,30 +147,30 @@ function createTable() {
         for (let j = 0; j < matrix[i].length; j++) {
 
             const number = matrix[i][j];
+
             const tile = document.createElement('td');
             // tile.textContent = matrix[i][j];
             tile.classList.add('tile');
             tile.classList.add(`row${i}`);
             tile.classList.add(`col${j}`);
             tile.classList.add(`val${matrix[i][j]}`);
-            tile.addEventListener('click', () => selectTile(tile));
-
             // tile.innerText =`row${i}col${j}`;
 
-            if (number != 0){
+            if (number != 0) {
                 const image = document.createElement('img');
-                // image.width = 70;
-                // image.height = 70;
                 image.alt = "Плитка";
                 image.src = `plates/white/${number}.svg`;
                 tile.append(image);
+                tile.addEventListener('click', () => selectTile(tile));
+            }
+            else {
+                tile.classList.add('matched');
             }
             row.appendChild(tile);
         }
         table.appendChild(row);
     }
 
-    // Добавляем таблицу после игрового поля
     gameBoard.appendChild(table);
 }
 
@@ -184,15 +185,19 @@ function selectTile(tile) {
 
         const isPath = checkMatch(tile1, tile2);
         if (isPath) {
-            
+
             tile1.classList.add('matched');
-            tile2.classList.add('matched');
+            tile2.classList.add('matched');    
+            tile1.classList.remove('selected');
+            tile2.classList.remove('selected');
 
             const tile1data = getTileData(tile1);
-            const tile2data = getTileData(tile2); 
+            const tile2data = getTileData(tile2);
 
             matrix[tile1data.row][tile1data.col] = 0;
             matrix[tile2data.row][tile2data.col] = 0;
+
+            availableTile(tile1, tile2, .01, 300);
 
             let bonusTime = calculateBonusTime(pairTime);
             finalTime = Math.min(levelTime, finalTime + bonusTime);
@@ -208,7 +213,7 @@ function selectTile(tile) {
 }
 
 function getTileData(tile) {
-    
+
     let row;
     let col;
     let value;
@@ -224,23 +229,23 @@ function getTileData(tile) {
             value = className.replaceAll('val', '');
     }
 
-    return {row, col, value};
+    return { row, col, value };
 }
 
 function checkMatch(tile1, tile2) {
-   
+
     const tile1data = getTileData(tile1);
     const tile2data = getTileData(tile2);
 
     if (tile1data.value === tile2data.value) {
-       return isPath(matrix, tile1data, tile2data);
-    }    
+        return isPath(matrix, tile1data, tile2data);
+    }
     return false;
 }
 
 function checkgamecondition() {
     let winCondition = true;
-
+    
     for (let i = 0; i < matrix.length; i++) {
         for (let j = 0; j < matrix[i].length; j++) {
             if (matrix[i][j]) {
@@ -253,6 +258,12 @@ function checkgamecondition() {
         gameCondition = Conditions.win;
         showModalDialoge();
         clearInterval(gametimer);
+    }
+    else {
+        if (!isAvailableTile()) {
+            currentReshaffle = 0;
+            reshafle(true);
+        }
     }
 }
 
@@ -273,15 +284,18 @@ function reStartGame() {
     if (gameCondition == Conditions.win) {
         gameLVL++;
     }
+
     if (gameCondition == Conditions.end) {
         currentLife = 3;
         gameLVL = 1;
     }
+
     if (gameCondition != Conditions.lostheart && gameCondition != Conditions.pause) {
         clearTable();
         createQueue();
         createTiles();
         createTable();
+        reshafle(true);
     }
 
     updateInterface();
@@ -292,29 +306,28 @@ function reStartGame() {
 }
 
 function help() {
+    if (helpCount == 0)
+        return;
+
     const table = document.getElementById('matrix-table');
     const rows = table.getElementsByTagName('tr');
 
-    // Перебираем все плитки
     for (let i = 0; i < rows.length; i++) {
         const cells = rows[i].getElementsByTagName('td');
         for (let j = 0; j < cells.length; j++) {
             const currentTile = cells[j];
 
-            // Пропускаем уже совпавшие плитки
             if (currentTile.classList.contains('matched')) continue;
 
-            // Ищем возможные совпадения
             for (let m = 0; m < rows.length; m++) {
                 const searchCells = rows[m].getElementsByTagName('td');
                 for (let n = 0; n < searchCells.length; n++) {
-                    // Пропускаем ту же самую плитку и уже совпавшие
                     if (i === m && j === n) continue;
                     const targetTile = searchCells[n];
                     if (targetTile.classList.contains('matched')) continue;
-                    
+
                     const isPath = checkMatch(currentTile, targetTile);
-                    if (isPath){
+                    if (isPath) {
                         helpCount--;
                         availableTile(currentTile, targetTile);
                         updateInterface();
@@ -324,6 +337,35 @@ function help() {
             }
         }
     }
+}
+
+function isAvailableTile() {
+    const table = document.getElementById('matrix-table');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        for (let j = 0; j < cells.length; j++) {
+            const currentTile = cells[j];
+
+            if (currentTile.classList.contains('matched')) continue;
+
+            for (let m = 0; m < rows.length; m++) {
+                const searchCells = rows[m].getElementsByTagName('td');
+                for (let n = 0; n < searchCells.length; n++) {
+                    if (i === m && j === n) continue;
+                    const targetTile = searchCells[n];
+                    if (targetTile.classList.contains('matched')) continue;
+
+                    const isPath = checkMatch(currentTile, targetTile);
+                    if (isPath) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }
 
 function toggleSound() {
@@ -336,18 +378,30 @@ function toggleSound() {
     }
 }
 
-function reshafle() {
-   
+function reshafle(freeShuffle = false) {
+    
     if (gameCondition === Conditions.pause || gameCondition === Conditions.end) {
         return;
     }
+    if (currentLife === 0) {
+        return;
+    }
+
+    gameBoard.classList.add('reshuffle');
+
+    setTimeout(() => {  } , 1000);
+
+    if (!freeShuffle) {
+        currentLife--;
+    }
+
     clearTable();
 
     for (let i = 0; i < numRows; i++) {
         for (let j = 0; j < numCols; j++) {
             const newI = Math.floor(Math.random() * numRows);
             const newJ = Math.floor(Math.random() * numCols);
-            
+
             // Меняем местами элементы
             const temp = matrix[i][j];
             matrix[i][j] = matrix[newI][newJ];
@@ -355,9 +409,11 @@ function reshafle() {
         }
     }
 
+    updateHeart();
     createTable();
+    
+    if (!isAvailableTile() && currentReshaffle < maxReshaffle) {
+        currentReshaffle++;
+        reshafle(true);
+    }
 }
-
-
-// Инициализация игры
-// reStartGame();

@@ -15,6 +15,9 @@
         <source src="audio/background.mp3" type="audio/mp3">
         Your browser does not support the audio element.
     </audio>
+
+    <div id="blur" class="blur"></div>
+
     <div id="startMenu" class="startMenu">
         <button id="but_start" class="buttonMenu buttonMainMenu">Начать</button>
     </div>
@@ -22,24 +25,39 @@
     <div id="gameContainer" class="game-container">
         <div class="top-bar">
             <div class="level">
-                <div id="level-number" class="level-circle">1</div>
-                <div class="level-text">Уровень</div>
+                <div class="levelNum" id="levelNum">1</div>
+                <img src="static/level.png" alt="Уровень">
             </div>
 
-            <div class="progress-bar">
-                <div id="myBar" class="progress"></div>
+            <div class="progressDiv">
+                <img class="progressPic" src="static/progressClock.png" alt="⏱">
+                <div class="progress-bar">
+                    <div id="myBar" class="progress"></div>
+                </div>
             </div>
 
-            <div class="hearts">
-                <div class="heart heartGame heartsFull"></div>
-                <div class="heart heartGame heartsFull"></div>
-                <div class="heart heartGame heartsFull"></div>
+            <div id="hearts" class="hearts">
+                <div class="heart">
+                    <img class="heartPic" Id="heartFull0" src="static/heartsFull.png" alt="🔍">
+                    <img class="heartPic" Id="heartBroken0" src="static/heartsBroken.png" alt="🔍">
+                </div>
+                <div class="heart">
+                    <img class="heartPic" Id="heartFull1" src="static/heartsFull.png" alt="🔍">
+                    <img class="heartPic" Id="heartBroken1" src="static/heartsBroken.png" alt="🔍">
+                </div>
+                <div class="heart">
+                    <img class="heartPic" Id="heartFull2" src="static/heartsFull.png" alt="🔍">
+                    <img class="heartPic" Id="heartBroken2" src="static/heartsBroken.png" alt="🔍">
+                </div>
             </div>
             <div class="controls">
-                <button id='help' class="zoom"><img src="static/help.png" alt="🔍">
+                <div id='help' class="zoom">
+                    <img class="topbarPic" src="static/help.png" alt="🔍">
                     <div id="helpcount" class="helpcount">6</div>
-                </button>
-                <button id='but_pause' class="pause"> <img src="static/pause.png" alt="⏸️"></button>
+                </div>
+                <div id='but_pause' class="pause">
+                    <img class="topbarPic" src="static/pause.png" alt="⏸️">
+                </div>
             </div>
         </div>
         <div class="game-area">
@@ -47,13 +65,11 @@
             </div>
         </div>
 
-
         <div class="bottom-bar">
-            <img id = 'sound' class="sound" src="static/soundon.png" alt="🔊">
+            <img id='sound' class="sound" src="static/soundon.png" alt="🔊">
             <img id="refresh" class="refresh" src="static/refresh.png" alt="↻">
         </div>
     </div>
-    <div id="blur" class="blur"></div>
 
     <div id="pause" class="pause_screen">
         <button id="unpause" alt="▶️"></button>
@@ -66,16 +82,8 @@
                 <h2>Уровень пройден</h2>
             </div>
 
-            <div class="modal-hearts">
-                <div class="heart">
-                    <div class="heart heartModal heartsFull"></div>
-                </div>
-                <div class="heart">
-                    <div class="heart heartModal heartsFull"></div>
-                </div>
-                <div class="heart">
-                    <div class="heart heartModal heartsFull"></div>
-                </div>
+            <div id="modalHearts" class="modal-hearts">
+            
             </div>
             <!-- <h2>Очки:</h2> -->
 
