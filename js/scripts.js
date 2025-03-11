@@ -1,0 +1,1 @@
+Conditions = { standart: 'standart', win: 'win', lostheart: 'lostheart', end: 'end', pause: 'pause' };

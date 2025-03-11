@@ -7,6 +7,7 @@
     <title>Маджонг</title>
     <link rel="preload" href="static/background.png" as="image">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="path.css">
 </head>
 
 <body oncontextmenu="return false;" ondragstart="return false;">
@@ -16,84 +17,124 @@
         Your browser does not support the audio element.
     </audio>
 
-    <div id="blur" class="blur"></div>
+    <div id="warning">Переверни смартфон!</div>
 
-    <div id="startMenu" class="startMenu">
-        <button id="but_start" class="buttonMenu buttonMainMenu">Начать</button>
-    </div>
+    <div class="mainContent">
+        <div id="blur" class="blur"></div>
 
-    <div id="gameContainer" class="game-container">
-        <div class="top-bar">
-            <div class="level">
-                <div class="levelNum" id="levelNum">1</div>
-                <img src="static/level.png" alt="Уровень">
-            </div>
-
-            <div class="progressDiv">
-                <img class="progressPic" src="static/progressClock.png" alt="⏱">
-                <div class="progress-bar">
-                    <div id="myBar" class="progress"></div>
-                </div>
-            </div>
-
-            <div id="hearts" class="hearts">
-                <div class="heart">
-                    <img class="heartPic" Id="heartFull0" src="static/heartsFull.png" alt="🔍">
-                    <img class="heartPic" Id="heartBroken0" src="static/heartsBroken.png" alt="🔍">
-                </div>
-                <div class="heart">
-                    <img class="heartPic" Id="heartFull1" src="static/heartsFull.png" alt="🔍">
-                    <img class="heartPic" Id="heartBroken1" src="static/heartsBroken.png" alt="🔍">
-                </div>
-                <div class="heart">
-                    <img class="heartPic" Id="heartFull2" src="static/heartsFull.png" alt="🔍">
-                    <img class="heartPic" Id="heartBroken2" src="static/heartsBroken.png" alt="🔍">
-                </div>
-            </div>
-            <div class="controls">
-                <div id='help' class="zoom">
-                    <img class="topbarPic" src="static/help.png" alt="🔍">
-                    <div id="helpcount" class="helpcount">6</div>
-                </div>
-                <div id='but_pause' class="pause">
-                    <img class="topbarPic" src="static/pause.png" alt="⏸️">
-                </div>
-            </div>
-        </div>
-        <div class="game-area">
-            <div id="game-board">
-            </div>
+        <div id="startMenu" class="startMenu">
+            <button id="but_start" class="buttonMenu buttonMainMenu">Начать</button>
         </div>
 
-        <div class="bottom-bar">
-            <img id='sound' class="sound" src="static/soundon.png" alt="🔊">
-            <img id="refresh" class="refresh" src="static/refresh.png" alt="↻">
-        </div>
-    </div>
+        <div id="gameContainer" class="game-container">
+            <div class="top-bar">
+                <div class="level">
+                    <div class="levelNum" id="levelNum">1</div>
+                    <img src="static/level.png" alt="Уровень">
+                </div>
 
-    <div id="pause" class="pause_screen">
-        <button id="unpause" alt="▶️"></button>
-    </div>
+                <div class="progressDiv">
+                    <img class="progressPic" src="static/progressClock.png" alt="⏱">
+                    <div class="progress-bar">
+                        <div id="myBar" class="progress"></div>
+                    </div>
+                </div>
 
-    <div id="timeUpModal" class="modal">
-        <div class="container">
-            <div id="modalHead" class="win">
-                <h1>Поздравляем!</h1>
-                <h2>Уровень пройден</h2>
+                <div id="hearts" class="hearts">
+                    <div class="heart">
+                        <img class="heartPic" Id="heartFull0" src="static/heartsFull.png" alt="🔍">
+                        <img class="heartPic" Id="heartBroken0" src="static/heartsBroken.png" alt="🔍">
+                    </div>
+                    <div class="heart">
+                        <img class="heartPic" Id="heartFull1" src="static/heartsFull.png" alt="🔍">
+                        <img class="heartPic" Id="heartBroken1" src="static/heartsBroken.png" alt="🔍">
+                    </div>
+                    <div class="heart">
+                        <img class="heartPic" Id="heartFull2" src="static/heartsFull.png" alt="🔍">
+                        <img class="heartPic" Id="heartBroken2" src="static/heartsBroken.png" alt="🔍">
+                    </div>
+                </div>
+                <div class="controls">
+                    <div id='help' class="zoom">
+                        <img class="topbarPic" src="static/help.png" alt="🔍">
+                        <div id="helpcount" class="helpcount">6</div>
+                    </div>
+                    <div id='but_pause' class="pause">
+                        <img class="topbarPic" src="static/pause.png" alt="⏸️">
+                    </div>
+                    <div id='changeColor' class="changeColor">
+                        <img class="topbarPic" src="static/changecolor.png" alt="⏸️">
+                    </div>
+                </div>
+            </div>
+            <div class="game-area">
+                <div id="game-board">
+                </div>
             </div>
 
-            <div id="modalHearts" class="modal-hearts">
-            
+            <div class="bottom-bar">
+                <img id='sound' class="sound" src="static/soundon.png" alt="🔊">
+                <img id="refresh" class="refresh" src="static/refresh.png" alt="↻">
             </div>
-            <!-- <h2>Очки:</h2> -->
+        </div>
 
-            <button id="but_modal" class="buttonMenu">Следующий уровень</button>
+        <div id="pause" class="pause_screen">
+            <button id="unpause" alt="▶️"></button>
+        </div>
+
+        <div id="timeUpModal" class="modal">
+            <div class="container">
+                <div id="modalHead" class="win">
+                    <h1>Поздравляем!</h1>
+                    <h2>Уровень пройден</h2>
+                </div>
+
+                <div id="modalHearts" class="modal-hearts">
+
+                </div>
+                <!-- <h2>Очки:</h2> -->
+
+                <button id="but_modal" class="buttonMenu">Следующий уровень</button>
+            </div>
         </div>
     </div>
+    <script src="js/sound.js"></script>
+    <script src="js/interface.js"></script>
+    <script src="js/pathFinder.js"></script>
+    <script src="js/scripts.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/game.js"></script>
+    <script src="/sdk.js"></script>
+    <script>
+        window.game = new MajongGame();
+        YaGames.init().then(ysdk => {
+            ysdk.adv.showFullscreenAdv();
 
-    <script src="interface.js"></script>
-    <script src="pathFinder.js"></script>
-    <script src="scripts.js"></script>
+            const buttonElem = document.querySelector('#button');
+
+            let commonCounter = 0;
+            buttonElem.addEventListener('click', () => {
+                let counter = 0;
+
+                function getCallback(callbackName) {
+                    return () => {
+                        counter += 1;
+                        commonCounter += 1;
+
+                        console.log(`showFullscreenAdv; callback ${callbackName}; ${counter} call`);
+                    }
+                }
+
+                ysdk.adv.showFullscreenAdv({
+                    callbacks: {
+                        onClose: getCallback('onClose'),
+                        onOpen: getCallback('onOpen'),
+                        onError: getCallback('onError')
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
