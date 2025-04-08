@@ -1,12 +1,12 @@
 path {
     fill: none;
     stroke: rgb(0, 255, 42);
-    stroke-width: 10px;
+    stroke-width: 1.5dvh;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-dasharray: 1000;
     stroke-dashoffset: 1000;
-    animation: draw 1s linear forwards;
+    animation: draw 0.2s linear forwards;
 }
 
 @keyframes dash {

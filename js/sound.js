@@ -7,7 +7,7 @@ class Sound {
 
         this.loadSound('click', 'audio/key_press.mp3');
         this.loadSound('ambient', 'audio/background2.mp3');
-        this.loadSound('minusheart', 'audio/minusheart.mp3');
+        this.loadSound('lostheart', 'audio/minusheart.mp3');
         this.loadSound('gameover', 'audio/gameover.mp3');
         this.ambient = null;
         this.muted = false;

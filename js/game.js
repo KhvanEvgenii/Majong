@@ -1,5 +1,6 @@
 class MajongGame {
-    constructor() {
+    constructor(ysdk) {
+        this.ysdk = ysdk;
         // DOM элементы
         this.gameContainer = document.getElementById('gameContainer');
         this.gameBoard = document.getElementById('game-board');
@@ -11,6 +12,7 @@ class MajongGame {
         this.pauseBut = document.getElementById('but_pause');
         this.helpBut = document.getElementById('help');
         this.helpCountElement = document.getElementById('helpcount');
+        this.advIco = document.getElementById('advIco');
         this.changeColorBut = document.getElementById('changeColor');
         this.unpauseBut = document.getElementById('unpause');
         this.pauseDiv = document.getElementById('pause');
@@ -23,14 +25,16 @@ class MajongGame {
         this.soundBut = document.getElementById('sound');
         this.backgroundMusic = document.getElementById('backgroundMusic');
         this.refreshBut = document.getElementById('refresh');
+        this.progressCircle = document.getElementById('progressCircle');
+        // this.progressNum = document.getElementById('progressNum');
 
         // Настройки игры
         this.numCols = 16;
         this.numRows = 8;
         this.gameSize = this.numCols * this.numRows / 2;
-        this.startdiff = 10;
+        this.startdiff = 20;
         this.T1 = 6000;  // Время на первый уровень (сек)
-        this.dT = 5;    // Уменьшение времени на уровень (сек)
+        this.dT = 1;    // Уменьшение времени на уровень (сек)
         this.B_max = 5; // Максимальное бонусное время (сек)
         this.t_b = 400;   // Пороговое время для бонуса (сек)
 
@@ -41,7 +45,7 @@ class MajongGame {
         this.currentLife = 3; // Количесто жизней
         this.gametimer = null;
         this.gameCondition = Conditions.standart;
-        this.helpCount = 7;
+        this.helpCount = 4;
         this.isColor = true;
         this.currentReshaffle = 0;
         this.maxReshaffle = 20;
@@ -64,16 +68,9 @@ class MajongGame {
     }
 
     initSound() {
-        if (this.storage.getSoundStatus() == 'disable') {
+        if (this.storage.getSoundStatus() == 0) {
             this.toggleSound();
         }
-    }
-
-    initSavedData() {
-        this.gameLVL = this.storage.getGameLVL();
-        this.currentLife = this.storage.getCurrentLife();
-        this.isColor = this.storage.getIsColor();
-        this.helpCount = this.storage.getHelpCount();
     }
 
     initEventListeners() {
@@ -89,12 +86,18 @@ class MajongGame {
         });
 
         this.pauseBut.addEventListener('click', () => {
-            this.pauseGame();
-            this.sound.playSound('click');
+            if (this.gameCondition != Conditions.pause) {
+                this.pauseGame();
+                this.sound.playSound('click');
+            }
+            else {
+                this.reStartGame();
+                this.sound.playSound('click');
+            }
         });
 
         this.changeColorBut.addEventListener('click', () => {
-            this.changeColor();
+            changeColor(this);
             this.sound.playSound('click');
         });
 
@@ -114,9 +117,16 @@ class MajongGame {
         });
 
         this.refreshBut.addEventListener('click', () => {
-            this.reshafle();
+            this.handleRefresh();
             this.sound.playSound('click');
         });
+
+        if (this.ysdk) {
+            this.ysdk.on('game_api_pause', pauseCallback.bind(null, this));
+            this.ysdk.on('game_api_resume', resumeCallback.bind(null, this));
+        }
+
+        // window.addEventListener("visibilitychange", () => this.sound.onFocus());
     }
 
     createQueue() {
@@ -125,39 +135,70 @@ class MajongGame {
             allTiles.push(i);
         }
         this.tileValues.length = 0;
+        console.log('Заполняем массив');
+        try {
+            let currentdiff = Math.min(this.startdiff + Math.floor(this.gameLVL / 3) * 2, allTiles.length);
+            const tileValuesPull = [];
 
-        let currentdiff = Math.min(this.startdiff + Math.floor(this.gameLVL / 3) * 2, allTiles.length);
+            let tileIndex = this.gameLVL <= 10 ? 4 - Math.floor(this.gameLVL / 3) : 1;
 
-        while (this.tileValues.length !== this.gameSize) {
-            for (let i = 0; i < currentdiff; i++) {
-                if (this.tileValues.length == this.gameSize)
-                    break;
-                this.tileValues.push(allTiles[i]);
+            console.log('tileIndex', tileIndex);
+            while (tileValuesPull.length < currentdiff) {
+                for (let i = 0; i < allTiles.length; i += tileIndex) {
+                    if (tileValuesPull.length > currentdiff)
+                        break;
+                    tileValuesPull.push(allTiles[i]);
+                    console.log(i);
+                }
             }
+            console.log('tileValuesPull', tileValuesPull);
+            while (this.tileValues.length !== this.gameSize) {
+                for (let i = 0; i < tileValuesPull.length; i++) {
+                    if (this.tileValues.length == this.gameSize)
+                        break;
+                    this.tileValues.push(tileValuesPull[i]);
+                }
+            }
+            console.log('tileValues', this.tileValues);
+        }
+        catch (error) {
+            console.log(error);
         }
     }
 
     start_countdown() {
+        console.log('start_countdown');
+        if (this.gametimer) {
+            clearInterval(this.gametimer);
+        }
         this.gametimer = setInterval(() => {
             this.finalTime--;
             this.pairTime++;
 
-            this.progressBar.style.width = (this.finalTime / this.levelTime * 100) + '%';
+            let progressValue = (this.finalTime / this.levelTime * 100);
+            document.documentElement.style.setProperty('--progress', progressValue);
+
+            // this.progressBar.style.width = (this.finalTime / this.levelTime * 100) + '%';
+            // this.progressCircle.setAttribute('stroke-dashoffset', (this.finalTime / this.levelTime * 100));
 
             if (this.finalTime <= 0) {
-                this.currentLife--;
-                if (this.currentLife == 0) {
-                    this.gameCondition = Conditions.end;
-                    updateHeart(this);
-                    showModalDialoge(this);
+                console.log('finalTime <= 0');
+                if (this.currentLife <= 0) {
+                    console.log('currentLife <= 0');
+                    if ('ysdk' in window) {
+                        console.log('ysdk in window');
+                        this.gameCondition = Conditions.showAdv;
+                    }
+                    else {
+                        console.log('ysdk not in window');
+                        this.gameCondition = Conditions.end;
+                    }
                 }
                 else {
                     this.gameCondition = Conditions.lostheart;
-                    updateHeart(this);
-                    showModalDialoge(this);
-                }
 
-                clearInterval(this.gametimer);
+                }
+                showModalDialoge(this);
             }
         }, 10);
     }
@@ -166,71 +207,12 @@ class MajongGame {
         return pairTime <= this.t_b ? this.B_max * (1 - pairTime / this.t_b) * 100 : 0;
     }
 
-    makeMatrix() {
-        this.matrix = [];
-        const values = [...this.tileValues, ...this.tileValues].sort(() => Math.random() - 0.5);
+    makeMatrix(values) {
 
-        for (let i = 0; i < this.numRows + 2; i++) {
-            let row = [];
+        this.matrix = this.distributeElementsInMatrix(values);
+        console.log('matrix', this.matrix);
+        this.addMatrixBorder();
 
-            for (let j = 0; j < this.numCols + 2; j++) {
-                if (i === 0 || j === 0 || i === this.numRows + 1 || j === this.numCols + 1) {
-                    row.push(999);
-                } else {
-                    row.push(values[(i - 1) * this.numCols + (j - 1)]);
-                }
-            }
-            this.matrix.push(row);
-        }
-    }
-
-    clearTable() {
-        const table = document.getElementById('matrix-table');
-        if (table) {
-            table.remove();
-        }
-    }
-
-    showTable() {
-        const table = document.createElement('table');
-        table.id = 'matrix-table';
-
-        for (let i = 0; i < this.matrix.length; i++) {
-            const row = document.createElement('tr');
-            for (let j = 0; j < this.matrix[i].length; j++) {
-                const number = this.matrix[i][j];
-                const tile = document.createElement('td');
-
-                tile.classList.add(`row${i}`);
-                tile.classList.add(`col${j}`);
-                tile.classList.add(`val${this.matrix[i][j]}`);
-
-                if (number != 0 && number != 999) {
-                    const image = document.createElement('img');
-                    image.alt = "Плитка";
-
-                    const color = this.isColor ? 'Color' : 'White';
-
-                    image.src = `plates/${color}/${number}.svg`;
-                    tile.append(image);
-                    tile.addEventListener('click', () => this.selectTile(tile));
-                }
-                else {
-                    tile.classList.add('matched');
-                }
-
-                if (number === 999) {
-                    tile.classList.add('border-tile');
-                }
-                else {
-                    tile.classList.add('tile');
-                }
-                row.appendChild(tile);
-            }
-            table.appendChild(row);
-        }
-
-        this.gameBoard.appendChild(table);
     }
 
     selectTile(tile) {
@@ -243,32 +225,37 @@ class MajongGame {
 
         if (this.selectedTiles.length === 2) {
             const [tile1, tile2] = this.selectedTiles;
-
-            const isPath = this.checkMatch(tile1, tile2);
-            if (isPath) {
-                tile1.classList.add('matched');
-                tile2.classList.add('matched');
+            const tile1data = this.getTileData(tile1);
+            const tile2data = this.getTileData(tile2);
+            if (tile1data.value != tile2data.value) {
                 tile1.classList.remove('selected');
-                tile2.classList.remove('selected');
-
-                const tile1data = this.getTileData(tile1);
-                const tile2data = this.getTileData(tile2);
-
-                this.matrix[tile1data.row][tile1data.col] = 0;
-                this.matrix[tile2data.row][tile2data.col] = 0;
-
-                showPath(allPath);
-
-                let bonusTime = this.calculateBonusTime(this.pairTime);
-                this.finalTime = Math.min(this.levelTime, this.finalTime + bonusTime);
-                this.pairTime = 0;
+                this.selectedTiles = [tile2];
             }
             else {
-                paintBackGround(tile1, tile2);
-            }
+                const isPath = this.checkMatch(tile1, tile2);
+                if (isPath) {
+                    tile1.classList.add('matched');
+                    tile2.classList.add('matched');
+                    tile1.classList.remove('selected');
+                    tile2.classList.remove('selected');
 
-            this.selectedTiles = [];
-            this.checkgamecondition();
+                    this.matrix[tile1data.row][tile1data.col] = 0;
+                    this.matrix[tile2data.row][tile2data.col] = 0;
+                    
+                    showPath(allPath);
+
+                    this.moveMatrix({x: 1, y: 0});
+                    updateTable(this);
+                    let bonusTime = this.calculateBonusTime(this.pairTime);
+                    this.finalTime = Math.min(this.levelTime, this.finalTime + bonusTime);
+                    this.pairTime = 0;
+                }
+                else {
+                    paintBackGround(tile1, tile2);
+                }
+                this.selectedTiles = [];
+                this.checkgamecondition();
+            }
         }
     }
 
@@ -316,8 +303,14 @@ class MajongGame {
 
         if (winCondition) {
             this.gameCondition = Conditions.win;
-            showModalDialoge(this);
-            clearInterval(this.gametimer);
+            if (this.gameLVL % 3 == 0) {
+                showFullscreenAdv(() => {
+                    showModalDialoge(this);
+                });
+            }
+            else {
+                showModalDialoge(this);
+            }
         }
         else {
             if (!this.isAvailableTile()) {
@@ -328,23 +321,47 @@ class MajongGame {
     }
 
     pauseGame() {
-        clearInterval(this.gametimer);
         this.gameCondition = Conditions.pause;
+        this.sound.muteAmbient();
         showModalDialoge(this);
     }
 
+    unpauseGame() {
+        this.gameCondition = Conditions.standart;
+        this.sound.unmuteAmbient();
+        hideModalDialoge(this);
+    }
+
     reStartGame() {
-
         const save = this.storage.loadGame();
+        console.log('gamecondition', this.gameCondition);
+        console.log("Данные сохранения");
+        console.log(save);
+        try {
+            if (save && save.gameLVL) {
+                this.gameLVL = save.gameLVL;
+                this.currentLife = save.currentLife;
+                this.helpCount = save.helpCount;
+                if (save.isColor !== undefined) {
+                    this.isColor = save.isColor;
+                }
+            }
+        } catch (error) {
+            console.log("Ошибка при загрузке данных");
+            console.log(error);
+        }
 
-        if (save) {
-            this.gameLVL = save.gameLVL;
-            this.currentLife = save.currentLife;
-            this.helpCount = save.helpCount;
-        } 
+        console.log(this.gameCondition);
+        if (this.gameCondition == Conditions.showAdv) {
+            showFullscreenAdv(() => {
+                this.reStartGame();
+            });
+            this.gameCondition = Conditions.end;
+            return;
+        }
 
-        if (this.gameCondition != Conditions.pause) {
-            this.levelTime = this.T1 - (this.gameLVL - 1) * 100 * this.dT;
+        if (this.gameCondition != Conditions.pause && this.gameCondition != Conditions.reshuffle) {
+            this.levelTime = this.T1 - (this.gameLVL - 1) * Math.min(2000, 100 * this.dT);
             this.finalTime = this.levelTime;
             this.pairTime = 0;
         }
@@ -359,31 +376,71 @@ class MajongGame {
             this.helpCount = 7;
         }
 
-        if (this.gameCondition != Conditions.lostheart && this.gameCondition != Conditions.pause) {
-            this.clearTable();
-            this.createQueue();
-            this.makeMatrix();
-            this.showTable();
-            this.reshafle(true);
-        }
+        if (this.gameCondition != Conditions.lostheart &&
+            this.gameCondition != Conditions.pause) {
 
+            let values;
+            if (this.gameCondition != Conditions.reshuffle) {
+                this.createQueue();
+                values = [...this.tileValues, ...this.tileValues];
+            }
+            else {
+                values = this.getMatrixValues();
+            }
+            this.makeMatrix(values);
+            this.reshafle(true);
+            updateTable(this);
+
+        }
         updateInterface(this);
 
         this.gameCondition = Conditions.standart;
+        console.log('Сохранение данных');
         this.storage.saveGame(this);
         this.start_countdown();
+        this.sound.unmuteAmbient();
+        yandexStart();
     }
 
     help() {
-        if (this.helpCount == 0)
+        if (this.helpCount == 0) {
+
+            clearInterval(this.gametimer);
+            yandexStop();
+            showRewardedVideo((rewarded) => {
+                if (rewarded) {
+                    console.log(this);
+                    this.helpCount += 1;
+                    this.finalTime += 100;
+                    updateInterface(this);
+                    this.storage.saveGame(this);
+                }
+                yandexStart();
+                this.start_countdown();
+            });
             return;
+        }
 
         const table = document.getElementById('matrix-table');
+        if (!table) {
+            console.log('table not found');
+            return;
+        }
         const rows = table.getElementsByTagName('tr');
 
-        for (let i = 0; i < rows.length; i++) {
+        // Создаем массив индексов для строк
+        const rowIndices = Array.from({ length: rows.length }, (_, i) => i);
+        // Перемешиваем индексы строк
+        rowIndices.sort(() => Math.random() - 0.5);
+
+        for (const i of rowIndices) {
             const cells = rows[i].getElementsByTagName('td');
-            for (let j = 0; j < cells.length; j++) {
+            // Создаем массив индексов для ячеек
+            const cellIndices = Array.from({ length: cells.length }, (_, j) => j);
+            // Перемешиваем индексы ячеек
+            cellIndices.sort(() => Math.random() - 0.5);
+
+            for (const j of cellIndices) {
                 const currentTile = cells[j];
 
                 if (currentTile.classList.contains('matched')) continue;
@@ -398,15 +455,16 @@ class MajongGame {
                         const isPath = this.checkMatch(currentTile, targetTile);
                         if (isPath) {
                             this.helpCount--;
-                            availableTile(currentTile, targetTile);
+                            this.storage.saveGame(this);
+                            showPath(allPath, 1, 2000);
                             updateInterface(this);
+
                             return;
                         }
                     }
                 }
             }
         }
-        this.storage.saveGame(this);
     }
 
     isAvailableTile() {
@@ -442,7 +500,7 @@ class MajongGame {
         if (this.gameCondition === Conditions.pause || this.gameCondition === Conditions.end) {
             return;
         }
-        if (this.currentLife === 0) {
+        if (this.currentLife <= 0 && !freeShuffle) {
             return;
         }
 
@@ -452,47 +510,200 @@ class MajongGame {
             this.gameBoard.classList.remove('reshuffle');
         }, 1000);
 
-        if (!freeShuffle) {
-            this.currentLife--;
-        }
-
-        this.clearTable();
-
-        const matrixNumRow = this.matrix.length;
-        const matrixNumCol = this.matrix[0].length;
-
-        for (let i = 1; i < matrixNumRow - 1; i++) {
-            for (let j = 1; j < matrixNumCol - 1; j++) {
-                const newI = Math.min(1 + Math.floor(Math.random() * matrixNumRow), matrixNumRow - 2);
-                const newJ = Math.min(1 + Math.floor(Math.random() * matrixNumCol), matrixNumCol - 2);
-
-                // Меняем местами элементы
-                const temp = this.matrix[i][j];
-                this.matrix[i][j] = this.matrix[newI][newJ];
-                this.matrix[newI][newJ] = temp;
-            }
-        }
+        const matrixValues = this.getMatrixValues();
+        this.removeMatrixBorder();
+        this.makeMatrix(matrixValues);
 
         updateHeart(this);
-        this.showTable();
+        updateTable(this);
 
         if (!this.isAvailableTile() && this.currentReshaffle < this.maxReshaffle) {
             this.currentReshaffle++;
             this.reshafle(true);
         }
-
-        this.storage.saveGame(this);
-    }
-
-    changeColor() {
-        this.isColor = !this.isColor;
-        this.clearTable();
-        this.showTable();
     }
 
     toggleSound() {
         this.sound.toggleSound();
-        this.storage.setSoundStatus(this.sound.muted ? 'disable' : 'enable');
+        this.storage.setSoundStatus(this.sound.muted ? 0 : 1);
         this.soundBut.src = this.sound.muted ? "static/soundoff.png" : "static/soundon.png";
+    }
+
+    distributeElementsInMatrix(array) {
+
+        array = [...array].sort(() => Math.random() - 0.5);
+
+        const rows = this.numRows;
+        const cols = this.numCols;
+        const matrix = Array(rows).fill().map(() => Array(cols).fill(0));
+
+        const canPlaceValue = (row, col, value) => {
+            // Проверяем соседей сверху, снизу, слева и справа
+            const neighbors = [
+                { r: row - 1, c: col },   // сверху
+                { r: row + 1, c: col },   // снизу
+                { r: row, c: col - 1 },   // слева
+                { r: row, c: col + 1 }    // справа
+            ];
+
+            for (const { r, c } of neighbors) {
+                if (r >= 0 && r < rows && c >= 0 && c < cols && matrix[r][c] === value) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        for (const value of array) {
+            let placed = false;
+
+            // Создаем список всех свободных позиций
+            const availablePositions = [];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (matrix[row][col] === 0 && canPlaceValue(row, col, value)) {
+                        availablePositions.push({ row, col });
+                    }
+                }
+            }
+
+            // Если есть доступные позиции, выбираем случайную
+            if (availablePositions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availablePositions.length);
+                const { row, col } = availablePositions[randomIndex];
+                matrix[row][col] = value;
+                placed = true;
+            }
+
+            // Если не удалось разместить элемент, пробуем найти любую свободную позицию
+            if (!placed) {
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        if (matrix[row][col] === 0) {
+                            matrix[row][col] = value;
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (placed) break;
+                }
+            }
+
+            // Если все позиции заняты, выходим из цикла
+            if (!placed) break;
+        }
+
+        return matrix;
+    }
+
+    getMatrixValues() {
+        const values = [];
+
+        for (let i = 1; i < this.matrix.length - 1; i++) {
+            for (let j = 1; j < this.matrix[i].length - 1; j++) {
+                if (this.matrix[i][j] !== 0 && this.matrix[i][j] !== 999) {
+                    values.push(this.matrix[i][j]);
+                }
+            }
+        }
+
+        return values;
+    }
+
+    removeMatrixBorder() {
+        this.matrix = this.matrix.slice(1, -1).map(row => row.slice(1, -1));
+    }
+
+    addMatrixBorder() {
+        this.matrix = this.matrix.map(row => [999, ...row, 999]);
+        this.matrix.unshift(Array(this.numCols + 2).fill(999));
+        this.matrix.push(Array(this.numCols + 2).fill(999));
+    }
+
+    handleRefresh() {
+        if (this.currentLife > 0) {
+            this.currentLife--;
+            this.storage.saveGame(this);
+            this.gameCondition = Conditions.reshuffle;
+            showModalDialoge(this);
+        }
+    }
+
+    moveMatrix(direction) {
+        if (!this.matrix) return;
+
+        const {x, y} = direction;
+        
+        // Определяем направление обхода матрицы
+        let rowStart, rowEnd, rowStep;
+        let colStart, colEnd, colStep;
+        
+        if (x > 0) {
+            // Движение вниз - начинаем с нижних строк
+            rowStart = this.matrix.length - 2; // Не трогаем границу
+            rowEnd = 0;
+            rowStep = -1;
+        } else if (x < 0) {
+            // Движение вверх - начинаем с верхних строк
+            rowStart = 1; // Не трогаем границу
+            rowEnd = this.matrix.length - 1;
+            rowStep = 1;
+        } else {
+            // Нет движения по вертикали
+            rowStart = 1;
+            rowEnd = this.matrix.length - 1;
+            rowStep = 1;
+        }
+        
+        if (y > 0) {
+            // Движение вправо - начинаем с правых столбцов
+            colStart = this.matrix[0].length - 2; // Не трогаем границу
+            colEnd = 0;
+            colStep = -1;
+        } else if (y < 0) {
+            // Движение влево - начинаем с левых столбцов
+            colStart = 1; // Не трогаем границу
+            colEnd = this.matrix[0].length - 1;
+            colStep = 1;
+        } else {
+            // Нет движения по горизонтали
+            colStart = 1;
+            colEnd = this.matrix[0].length - 1;
+            colStep = 1;
+        }
+        
+        // Смещаем плитки в заданном направлении
+        for (let i = rowStart; rowStep > 0 ? i <= rowEnd : i >= rowEnd; i += rowStep) {
+            for (let j = colStart; colStep > 0 ? j <= colEnd : j >= colEnd; j += colStep) {
+                // Пропускаем пустые ячейки и границы
+                if (this.matrix[i][j] === 0 || this.matrix[i][j] === 999) continue;
+                
+                let currentRow = i;
+                let currentCol = j;
+                
+                // Смещаем плитку до упора в заданном направлении
+                while (true) {
+                    const nextRow = currentRow + x;
+                    const nextCol = currentCol + y;
+                    
+                    // Проверяем, что следующая ячейка в пределах матрицы и пуста
+                    if (nextRow >= 0 && nextRow < this.matrix.length && 
+                        nextCol >= 0 && nextCol < this.matrix[0].length && 
+                        this.matrix[nextRow][nextCol] === 0) {
+                        
+                        // Перемещаем плитку
+                        this.matrix[nextRow][nextCol] = this.matrix[currentRow][currentCol];
+                        this.matrix[currentRow][currentCol] = 0;
+                        
+                        // Обновляем текущую позицию
+                        currentRow = nextRow;
+                        currentCol = nextCol;
+                    } else {
+                        // Не можем двигаться дальше
+                        break;
+                    }
+                }
+            }
+        }
     }
 }

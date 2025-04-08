@@ -14,19 +14,17 @@ function updateHeart(game) {
     game.heartsModal.innerHTML = game.heartsDiv.innerHTML;
 }
 
-function showPath(allPath) {
+function showPath(allPath, time = 0.2, delay = 500) {
     // Находим самый короткий путь в массиве allPath
-    console.log(allPath);
     let shortestPath = allPath[0];
-    
+
     for (let i = 1; i < allPath.length; i++) {
         if (allPath[i].length < shortestPath.length) {
             shortestPath = allPath[i];
         }
     }
-    
+
     const path = shortestPath;
-    console.log(path);
 
     // Собираем все плитки в массив
     const tiles = [];
@@ -36,10 +34,19 @@ function showPath(allPath) {
     }
 
     // Передаем массив плиток в функцию availableTile
-    availableTile(tiles, 1, 1000);
+    availableTile(tiles, time, delay);
 }
 
 function showModalDialoge(game) {
+
+    if (game.gameCondition == Conditions.lostheart) {
+        game.currentLife--;
+        game.storage.saveGame(game);
+    }
+
+    clearInterval(game.gametimer);
+
+    updateHeart(game);
 
     switch (game.gameCondition) {
         case Conditions.win:
@@ -53,23 +60,40 @@ function showModalDialoge(game) {
             game.butModal.textContent = 'Продолжить играть';
             game.blurDiv.style.display = 'block';
             game.timeUpModal.style.display = 'block';
-            sound.playSound('lostheart');
+            game.sound.playSound('lostheart');
+            break;
+        case Conditions.reshuffle:
+            game.modalHead.innerHTML = '<h1>Услуга платная</h1><h2> Минус жизнь</h2> ';
+            game.butModal.textContent = 'Продолжить играть';
+            game.blurDiv.style.display = 'block';
+            game.timeUpModal.style.display = 'block';
+            game.sound.playSound('lostheart');
+            break;
+        case Conditions.showAdv:
+            game.modalHead.innerHTML = '<h1>Сердец больше нет</h1><h2> Попробуйте еще раз</h2> ';
+            game.butModal.textContent = 'Начать с начала';
+            game.blurDiv.style.display = 'block';
+            game.timeUpModal.style.display = 'block';
+            game.sound.playSound('gameover');
             break;
         case Conditions.end:
             game.modalHead.innerHTML = '<h1>Сердец больше нет</h1><h2> Попробуйте еще раз</h2> ';
             game.butModal.textContent = 'Начать с начала';
             game.blurDiv.style.display = 'block';
             game.timeUpModal.style.display = 'block';
-            sound.playSound('gameover');
+            game.sound.playSound('gameover');
             break;
         case Conditions.pause:
             game.pauseDiv.style.display = 'flex';
-            game.gameContainer.style.display = 'none';
+            document.getElementById('game-board').style.display = 'none';
+            // game.gameContainer.style.display = 'none';
             break;
     }
+    yandexStop();
 }
 
 function hideModalDialoge(game) {
+    document.getElementById('game-board').style.display = 'block';
     game.gameContainer.style.display = 'flex';
     game.startMenu.style.display = 'none';
     game.timeUpModal.style.display = 'none';
@@ -90,7 +114,7 @@ function paintBackGround(tile1, tile2) {
     }, 700);
 }
 
-function availableTile(tiles, time = 1, delay = 1000) {
+function availableTile(tiles, time = 0.2, delay = 1000) {
     // Проверяем, передан ли массив или отдельные элементы
     if (!Array.isArray(tiles)) {
         // Поддержка старого формата вызова с двумя отдельными элементами
@@ -125,7 +149,7 @@ function availableTile(tiles, time = 1, delay = 1000) {
     path.setAttribute('stroke-width', '5');
     path.setAttribute('fill', 'none');
     path.style.strokeDasharray = '10, 5';
-    path.style.animation = 'dash 1s linear infinite';
+    // path.style.animation = 'dash 1s linear infinite';
 
     const cellCoordinates = [];
 
@@ -153,11 +177,9 @@ function availableTile(tiles, time = 1, delay = 1000) {
     const pathLength = path.getTotalLength();
     path.style.strokeDasharray = pathLength;
     path.style.strokeDashoffset = pathLength;
-    
+
     // Анимация пути
     path.style.animation = `dash ${time}s linear forwards`;
-
-
     // Удаляем SVG после анимации
     setTimeout(() => {
         svg.remove();
@@ -171,13 +193,10 @@ function updateInterface(game) {
     hideModalDialoge(game);
     game.levelElement.innerText = game.gameLVL;
     game.helpCountElement.innerText = game.helpCount;
+    game.advIco.style.display = game.helpCount <= 0 ? 'flex' : 'none';
+    game.helpCountElement.style.display = game.helpCount != 0 ? 'flex' : 'none';
     updateHeart(game);
-}
-
-function clearTable() {
-    while (gameBoard.firstChild) {
-        gameBoard.removeChild(gameBoard.firstChild);
-    }
+    updateTable(game);
 }
 
 function changeSoundImg(muted = false) {
@@ -186,4 +205,65 @@ function changeSoundImg(muted = false) {
     } else {
         soundBut.src = "static/soundoff.png";
     }
+}
+
+function  showTable(game) {
+    const table = document.createElement('table');
+    table.id = 'matrix-table';
+
+    for (let i = 0; i < game.matrix.length; i++) {
+        const row = document.createElement('tr');
+        for (let j = 0; j < game.matrix[i].length; j++) {
+            const number = game.matrix[i][j];   
+            const tile = document.createElement('td');
+
+            tile.classList.add(`row${i}`);
+            tile.classList.add(`col${j}`);
+            tile.classList.add(`val${game.matrix[i][j]}`);
+
+            if (number != 0 && number != 999) {
+                
+                const image = document.createElement('img');
+                console.log(game.isColor);
+                const color = game.isColor ? 'Color' : 'White';
+                const path = `plates/${color}/${number}.svg`;
+                // const image = loadedImages.get(path).cloneNode(true);
+
+                image.src = path;
+                tile.appendChild(image);
+                tile.addEventListener('click', () => game.selectTile(tile));
+            }
+            else {
+                tile.classList.add('matched');
+            }
+
+            if (number === 999) {
+                tile.classList.add('border-tile');
+            }
+            else {
+                tile.classList.add('tile');
+            }
+            row.appendChild(tile);
+        }
+        table.appendChild(row);
+    }
+
+    game.gameBoard.appendChild(table);
+}
+
+function clearTable(game) {
+    const table = document.getElementById('matrix-table');
+    if (table) {
+        table.remove();
+    }
+}
+
+function updateTable(game) {
+    clearTable(game);
+    showTable(game);
+}
+
+function changeColor(game) {
+    game.isColor = !game.isColor;
+    updateTable(game);
 }
