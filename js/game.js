@@ -245,7 +245,7 @@ class MajongGame {
                     showPath(allPath);
 
                     this.moveMatrix({x: 1, y: 0});
-                    updateTable(this);
+                    // updateTable(this);
                     let bonusTime = this.calculateBonusTime(this.pairTime);
                     this.finalTime = Math.min(this.levelTime, this.finalTime + bonusTime);
                     this.pairTime = 0;
@@ -694,6 +694,10 @@ class MajongGame {
                         // Перемещаем плитку
                         this.matrix[nextRow][nextCol] = this.matrix[currentRow][currentCol];
                         this.matrix[currentRow][currentCol] = 0;
+
+                        setTimeout(() => {
+                            updateTable(this);
+                        }, 300);
                         
                         // Обновляем текущую позицию
                         currentRow = nextRow;
